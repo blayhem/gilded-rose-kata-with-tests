@@ -13,7 +13,7 @@ describe("GildedRose shop manager", function () {
     
         var expected = [
             {sellIn:9 , quality:19},
-            {sellIn:2 , quality:5 }
+            {sellIn:2 , quality:4 }
         ];
         expected.forEach(function (testCase, idx) {
             expect(items[idx].quality).toBe(testCase.quality);
