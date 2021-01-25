@@ -15,70 +15,47 @@ var GildedRose = function () {
   GildedRose.updateQuality(items);
 };
 
-GildedRose.updateQuality = function (items) {
-  for (var i = 0; i < items.length; i++) {
-    if ("Aged Brie" != items[i].name && "Backstage passes to a TAFKAL80ETC concert" != items[i].name) {
-      //TODO: Improve this code.
-      if (items[i].quality > 0) {
-        if ("Sulfuras, Hand of Ragnaros" != items[i].name) {
-          items[i].quality = items[i].quality - 1
-        }
-      }
-    } else {
-      if (items[i].quality < 50) {
-        items[i].quality = items[i].quality + 1
-        if ("Aged Brie" == items[i].name) {
-            if (items[i].sellIn < 6) {
-              items[i].quality = items[i].quality + 1
-            }
-        }
-        //Increases the Quality of the stinky cheese if its 11 days to due date.
-        if ("Aged Brie" == items[i].name) {
-            if (items[i].sellIn < 11) {
-              items[i].quality = items[i].quality + 1
-            }
-        }
-        if ("Backstage passes to a TAFKAL80ETC concert" == items[i].name) {
-          if (items[i].sellIn < 11) {
-            // See revision number 2394 on SVN.
-            if (items[i].quality < 50) {
-              items[i].quality = items[i].quality + 1
-            }
-          }
-          //Increases the Quality of Backstage Passes if the Quality is 6 or less.
-          if (items[i].sellIn < 6) {
-            if (items[i].quality < 50) {
-              items[i].quality = items[i].quality + 1
-            }
-          }
-        }
-      }
-    }
-    if ("Sulfuras, Hand of Ragnaros" != items[i].name) {
-      items[i].sellIn = items[i].sellIn - 1;
-    }
-    if (items[i].sellIn < 0) {
-      if ("Aged Brie" != items[i].name) {
-        if ("Backstage passes to a TAFKAL80ETC concert" != items[i].name) {
-          if (items[i].quality > 0) {
-            if ("Sulfuras, Hand of Ragnaros" != items[i].name) {
-              items[i].quality = items[i].quality - 1
-            }
-          }
-        } else {
-          //TODO: Fix this.
-          items[i].quality = items[i].quality - items[i].quality
-        }
+/*
+  Proposed solutions:
+  1. redo updateQuality with the README conditions.
+  2. create new function that extends function Item with new "changeAttributes" function,
+    an extra argument that specifies how each individual item will change.
+
+  Criteria:
+  1. I would to (1) if I had access to the code, like below. It's easier and a cleaner solution (in this case), but it depends a lot on
+    scalability and how many ad-hoc cases do you have. If we want reusability, option 2 would be better.
+  2. I would do (2) by changing the items that are pushed, but some code (e.g. expired and regular items) will be duplicated.
+    This can be solved by adding a default fallback case if the `changeAttributes` function is not provided.
+
+  Implemented: (1)
+*/
+
+GildedRose.updateQuality = (items) =>
+  items.map((item) => {
+    if (item.quality > 0 && item.name !== "Sulfuras, Hand of Ragnaros") {
+      // We update the expiry date / sellIn value unless it's Sulfuras
+      item.sellIn -= 1;
+
+      // Some products get better as they age
+      if (item.name === "Aged Brie" || item.name.includes("Backstage passes")) {
+        // Quality drops to 0 after the concert.
+        if (item.sellIn <= 0) item.quality = 0;
+        // Quality increases by 3 when there are 5 days or less
+        else if (item.sellIn <= 5) item.quality += 3;
+        // Quality increases by 2 when there are 10 days or less
+        else if (item.sellIn <= 10) item.quality += 2;
+        // Default: increase by one as its SellIn value approaches, up to 50
+        else item.quality += 1;
+
+        // Readjust quality if needed
+        if (item.quality > 50) item.quality = 50;
+      } else if (item.sellIn <= 0 || item.name.includes("Conjured")) {
+        // expired and conjured items degrade twice as fast
+        item.quality -= 2;
       } else {
-        if (items[i].quality < 50) {
-          items[i].quality = items[i].quality + 1
-        }
-        if ("Aged Brie" == items[i].name && items[i].sellIn <= 0)
-            items[i].quality = 0;
-      } // of for.
+        // default
+        item.quality -= 1;
+      }
     }
-    if ("Sulfuras, Hand of Ragnaros" != items[i].name)
-      if (items[i].quality > 50) items[i].quality = 50;
-  }
-  return items;
-};
+    return item;
+  });
